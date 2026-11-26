@@ -114,13 +114,13 @@ Format: JSON array
 
 ## Example Applications
 
-### 1. IT Certification Quiz (Included)
+### 1. 「もしも私が経営者だったら」 (Included)
 
 **Files:**
-- `prompt.md` - Defines IT quiz generation logic
-- `public/quiz.html` - Quiz interface
+- `prompt.md` - Defines business decision scenarios and explanations
+- `public/quiz.html` - Game, scoring, and missed-question review interface
 
-**Usage:** Generate IT certification practice questions
+**Usage:** Generate four-choice management scenarios and learn from each decision. The API response retains the `question`, `selections`, and `answer` fields; `concept` and `explanation` provide learning points and review feedback.
 
 ### 2. Translation App (Example)
 
@@ -178,7 +178,7 @@ generic-webapi/
 ├── package.json       # Dependencies
 ├── .env.example       # Environment variables template
 ├── public/            # Static files
-│   ├── quiz.html     # IT quiz application
+│   ├── quiz.html     # Business decision learning game
 │   ├── style.css     # Styles
 │   └── quiz.css      # Quiz-specific styles
 └── README.md         # This file

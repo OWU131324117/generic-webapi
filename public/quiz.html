@@ -3,61 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Quiz Generator</title>
+    <title>もしも私が経営者だったら</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="quiz.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>ITパスポート対策クイズ</h1>
+            <h1>もしも私が経営者だったら</h1>
         </div>
 
         <div class="quiz-container">
-            <!-- クイズ設定画面 -->
+            <!-- ゲーム設定画面 -->
             <div class="quiz-setup" id="quizSetup">
+                <p class="game-intro">会社のピンチや成長のチャンスに、あなたならどう決断する？選択を通して経営の考え方を学ぼう。</p>
                 <div class="form-group">
-                    <label for="quizTitle">クイズのタイトル:</label>
-                    <input type="text" id="quizTitle" placeholder="例: ITパスポート対策クイズ" value="ITパスポート対策クイズ">
+                    <label for="quizTitle">ゲームのタイトル:</label>
+                    <input type="text" id="quizTitle" placeholder="例: もしも私が経営者だったら" value="もしも私が経営者だったら">
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="questionCount">問題数:</label>
+                        <label for="questionCount">シナリオ数:</label>
                         <input type="number" id="questionCount" min="1" max="20" value="5">
                     </div>
-                    
+
                     <div class="form-group">
-                        <button class="btn" onclick="generateQuiz()">クイズを生成</button>
+                        <button class="btn" id="generateBtn" type="button" onclick="generateQuiz()">ゲームを始める</button>
                     </div>
                 </div>
             </div>
 
-            <!-- クイズ実行画面 -->
+            <!-- ゲーム実行画面 -->
             <div class="quiz-playing" id="quizPlaying">
                 <div class="quiz-progress" id="quizProgress"></div>
                 <h2 id="quizTitleDisplay"></h2>
-                
+
                 <div class="question" id="currentQuestion"></div>
-                
+
                 <ul class="selections" id="selections"></ul>
-                
-                <div class="answer-feedback" id="answerFeedback"></div>
-                
-                <button class="btn" id="nextBtn" onclick="nextQuestion()" style="display: none;">次の問題</button>
-                <button class="btn" id="finishBtn" onclick="showResults()" style="display: none;">結果を見る</button>
+
+                <div class="answer-feedback" id="answerFeedback" aria-live="polite"></div>
+
+                <button class="btn" id="nextBtn" type="button" onclick="nextQuestion()" style="display: none;">次のシナリオ</button>
+                <button class="btn" id="finishBtn" type="button" onclick="showResults()" style="display: none;">結果と振り返りを見る</button>
             </div>
 
-            <!-- 結果画面 -->
+            <!-- 結果と復習画面 -->
             <div class="quiz-results" id="quizResults">
-                <h2>クイズ結果</h2>
+                <h2>経営判断の結果</h2>
+                <section class="result-award" id="resultAward" aria-live="polite" aria-atomic="true">
+                    <div class="award-seal" aria-hidden="true"><span id="awardIcon">✦</span></div>
+                    <p class="award-eyebrow">あなたの経営者ランク</p>
+                    <h3 class="executive-title" id="executiveTitle"></h3>
+                    <p class="award-message" id="awardMessage"></p>
+                </section>
                 <div class="score" id="finalScore"></div>
-                <button class="btn" onclick="restartQuiz()">新しいクイズを作成</button>
+                <section class="review-section" aria-labelledby="reviewTitle">
+                    <h3 id="reviewTitle">経営判断を振り返る</h3>
+                    <p class="review-intro">選んだ判断と最善の判断を比べて、経営のポイントを確認しましょう。</p>
+                    <div id="reviewList" class="review-list"></div>
+                </section>
+                <button class="btn" type="button" onclick="restartQuiz()">新しいシナリオに挑戦</button>
             </div>
         </div>
 
-        <div class="status" id="status">Ready</div>
-        <div class="loading" id="loading">クイズを生成中...</div>
+        <div class="status" id="status">準備完了</div>
+        <div class="loading" id="loading" role="status" aria-live="polite">経営シナリオを準備中...</div>
     </div>
 
     <script>
@@ -66,30 +78,30 @@
         let score = 0;
         let selectedAnswer = null;
         let hasAnswered = false;
+        let answerHistory = [];
 
-        // 初期化
-        document.addEventListener('DOMContentLoaded', function() {
-            updateStatus();
-        });
+        document.addEventListener('DOMContentLoaded', () => updateStatus());
 
-        // ステータス更新
-        function updateStatus() {
+        function updateStatus(message = '準備完了', isError = false) {
             const statusEl = document.getElementById('status');
-            statusEl.textContent = 'Ready to generate ITパスポート quiz';
-            statusEl.style.color = '#28a745';
+            statusEl.textContent = message;
+            statusEl.classList.toggle('error', isError);
         }
 
-        // クイズ生成
+        // 既存の POST /api/ と title/count のリクエスト形式をそのまま利用
         async function generateQuiz() {
             const title = document.getElementById('quizTitle').value.trim();
-            const count = parseInt(document.getElementById('questionCount').value);
+            const count = Number(document.getElementById('questionCount').value);
 
-            if (!title || count < 1) {
-                alert('すべての項目を正しく入力してください');
+            if (!title || !Number.isInteger(count) || count < 1 || count > 20) {
+                alert('タイトルとシナリオ数（1〜20）を正しく入力してください');
                 return;
             }
 
+            const generateBtn = document.getElementById('generateBtn');
             document.getElementById('loading').classList.add('show');
+            generateBtn.disabled = true;
+            updateStatus('シナリオを作成しています…');
 
             try {
                 const response = await fetch('/api/', {
@@ -111,24 +123,30 @@
                 const data = await response.json();
                 quizData = data.data;
 
-                if (!Array.isArray(quizData) || quizData.length === 0) {
-                    throw new Error('Invalid quiz data format');
+                if (!Array.isArray(quizData) || quizData.length === 0 || quizData.some(question =>
+                    !question || typeof question.question !== 'string' ||
+                    !Array.isArray(question.selections) || question.selections.length !== 4 ||
+                    !Number.isInteger(question.answer) || question.answer < 0 || question.answer > 3
+                )) {
+                    throw new Error('シナリオの形式が正しくありません');
                 }
 
                 currentQuestionIndex = 0;
                 score = 0;
-                document.getElementById('quizTitleDisplay').textContent = data.title;
+                answerHistory = [];
+                document.getElementById('quizTitleDisplay').textContent = data.title || title;
                 startQuiz();
-                
+                updateStatus('あなたの経営判断を始めましょう');
             } catch (error) {
                 console.error('Error:', error);
-                alert('クイズの生成に失敗しました: ' + error.message);
+                updateStatus('シナリオを作成できませんでした', true);
+                alert('シナリオの生成に失敗しました: ' + error.message);
             } finally {
                 document.getElementById('loading').classList.remove('show');
+                generateBtn.disabled = false;
             }
         }
 
-        // クイズ開始
         function startQuiz() {
             document.getElementById('quizSetup').style.display = 'none';
             document.getElementById('quizPlaying').style.display = 'block';
@@ -136,7 +154,6 @@
             showQuestion();
         }
 
-        // 問題表示
         function showQuestion() {
             if (currentQuestionIndex >= quizData.length) {
                 showResults();
@@ -147,14 +164,13 @@
             hasAnswered = false;
             selectedAnswer = null;
 
-            document.getElementById('quizProgress').textContent = 
-                `問題 ${currentQuestionIndex + 1} / ${quizData.length}`;
-            
+            document.getElementById('quizProgress').textContent =
+                `シナリオ ${currentQuestionIndex + 1} / ${quizData.length}`;
             document.getElementById('currentQuestion').textContent = question.question;
-            
+
             const selectionsEl = document.getElementById('selections');
-            selectionsEl.innerHTML = '';
-            
+            selectionsEl.replaceChildren();
+
             question.selections.forEach((selection, index) => {
                 const li = document.createElement('li');
                 li.className = 'selection-item';
@@ -163,12 +179,14 @@
                 selectionsEl.appendChild(li);
             });
 
-            document.getElementById('answerFeedback').style.display = 'none';
+            const feedback = document.getElementById('answerFeedback');
+            feedback.style.display = 'none';
+            feedback.textContent = '';
+            feedback.className = 'answer-feedback';
             document.getElementById('nextBtn').style.display = 'none';
             document.getElementById('finishBtn').style.display = 'none';
         }
 
-        // 答え選択
         function selectAnswer(index) {
             if (hasAnswered) return;
 
@@ -179,9 +197,8 @@
             const correctAnswer = question.answer;
             const isCorrect = selectedAnswer === correctAnswer;
 
-            if (isCorrect) {
-                score++;
-            }
+            if (isCorrect) score++;
+            answerHistory[currentQuestionIndex] = { selectedAnswer, isCorrect };
 
             const selectionItems = document.querySelectorAll('.selection-item');
             selectionItems.forEach((item, i) => {
@@ -195,12 +212,12 @@
 
             const feedback = document.getElementById('answerFeedback');
             feedback.style.display = 'block';
+            feedback.className = `answer-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+            const explanation = question.explanation || 'この判断が、状況に合った経営の一手です。';
             if (isCorrect) {
-                feedback.className = 'answer-feedback correct';
-                feedback.textContent = '正解！';
+                feedback.textContent = `正解！ ${explanation}`;
             } else {
-                feedback.className = 'answer-feedback incorrect';
-                feedback.textContent = `不正解。正解は「${question.selections[correctAnswer]}」です。`;
+                feedback.textContent = `不正解。最善の判断は「${question.selections[correctAnswer]}」です。${explanation}`;
             }
 
             if (currentQuestionIndex < quizData.length - 1) {
@@ -210,29 +227,124 @@
             }
         }
 
-        // 次の問題
         function nextQuestion() {
             currentQuestionIndex++;
             showQuestion();
         }
 
-        // 結果表示
         function showResults() {
             document.getElementById('quizPlaying').style.display = 'none';
             document.getElementById('quizResults').style.display = 'block';
-            
+
             const percentage = Math.round((score / quizData.length) * 100);
-            document.getElementById('finalScore').textContent = 
+            document.getElementById('finalScore').textContent =
                 `${score} / ${quizData.length} 問正解 (${percentage}%)`;
+            renderExecutiveAward(percentage);
+            renderReview();
+            updateStatus('プレイ完了');
         }
 
-        // クイズリスタート
+        function renderExecutiveAward(percentage) {
+            const ranks = [
+                {
+                    minimum: 100,
+                    id: 'legend',
+                    title: '伝説の経営者',
+                    emblem: '♛',
+                    message: '全ての局面で最善の一手を選び抜きました。見事な采配です。'
+                },
+                {
+                    minimum: 80,
+                    id: 'executive',
+                    title: '一流の経営者',
+                    emblem: '★',
+                    message: '確かな判断力で、会社を次の成長へ導きました。'
+                },
+                {
+                    minimum: 60,
+                    id: 'strategist',
+                    title: '頼れる経営者',
+                    emblem: '◆',
+                    message: '重要な局面で、堅実な判断を重ねました。'
+                },
+                {
+                    minimum: 40,
+                    id: 'rising',
+                    title: '成長株の経営者',
+                    emblem: '↗',
+                    message: '経験を糧に、次の一手を磨いていきましょう。'
+                },
+                {
+                    minimum: 0,
+                    id: 'novice',
+                    title: '経営者見習い',
+                    emblem: '✦',
+                    message: '振り返りを重ねるほど、経営の視点が身についていきます。'
+                }
+            ];
+            const rank = ranks.find(candidate => percentage >= candidate.minimum);
+
+            document.getElementById('resultAward').dataset.rank = rank.id;
+            document.getElementById('awardIcon').textContent = rank.emblem;
+            document.getElementById('executiveTitle').textContent = rank.title;
+            document.getElementById('awardMessage').textContent = rank.message;
+        }
+
+        function renderReview() {
+            const reviewList = document.getElementById('reviewList');
+            reviewList.replaceChildren();
+
+            const missedQuestions = quizData
+                .map((question, index) => ({ question, result: answerHistory[index], index }))
+                .filter(item => item.result && !item.result.isCorrect);
+
+            if (missedQuestions.length === 0) {
+                const message = document.createElement('p');
+                message.className = 'review-empty';
+                message.textContent = '全問正解です！すべての経営判断が的確でした。';
+                reviewList.appendChild(message);
+                return;
+            }
+
+            missedQuestions.forEach(({ question, result, index }) => {
+                const card = document.createElement('article');
+                card.className = 'review-item';
+
+                const heading = document.createElement('h4');
+                heading.textContent = `シナリオ ${index + 1}: ${question.question}`;
+                card.appendChild(heading);
+                appendReviewLine(card, 'あなたの選択', question.selections[result.selectedAnswer]);
+                appendReviewLine(card, '最善の判断', question.selections[question.answer]);
+
+                if (question.concept) {
+                    appendReviewLine(card, '経営のポイント', question.concept);
+                }
+                if (question.explanation) {
+                    appendReviewLine(card, '解説', question.explanation);
+                }
+
+                reviewList.appendChild(card);
+            });
+        }
+
+        function appendReviewLine(parent, label, value) {
+            const line = document.createElement('p');
+            const labelEl = document.createElement('strong');
+            labelEl.textContent = `${label}: `;
+            const valueEl = document.createElement('span');
+            valueEl.textContent = value || '（回答なし）';
+            line.append(labelEl, valueEl);
+            parent.appendChild(line);
+        }
+
         function restartQuiz() {
             document.getElementById('quizResults').style.display = 'none';
             document.getElementById('quizSetup').style.display = 'block';
             quizData = [];
             currentQuestionIndex = 0;
             score = 0;
+            answerHistory = [];
+            updateStatus();
         }
     </script>
 </body>

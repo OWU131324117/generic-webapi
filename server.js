@@ -107,7 +107,10 @@ async function callOpenAI(prompt) {
             messages: [
                 { role: 'system', content: prompt }
             ],
-            max_completion_tokens: 2000,
+            // シナリオ本文・選択肢・解説を複数件生成するため、旧設定より余裕を持たせる。
+            // GPT-6 の reasoning tokens も max_completion_tokens に含まれる。
+            max_completion_tokens: 8192,
+            reasoning_effort: 'low',
             response_format: { type: "json_object" }
         })
     });
@@ -118,7 +121,17 @@ async function callOpenAI(prompt) {
     }
 
     const data = await response.json();
-    const responseText = data.choices[0].message.content;
+    const choice = data.choices?.[0];
+    if (!choice) {
+        throw new Error('OpenAI returned no completion choice.');
+    }
+    if (choice.finish_reason === 'length') {
+        throw new Error('OpenAI response was truncated at max_completion_tokens.');
+    }
+    const responseText = choice.message?.content;
+    if (typeof responseText !== 'string') {
+        throw new Error(`OpenAI returned no text content (finish_reason: ${choice.finish_reason}).`);
+    }
     return extractArray(responseText);
 }
 
