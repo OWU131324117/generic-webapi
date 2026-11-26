@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#173f34">
+    <title>資産ランキング | もしも私が経営者だったら</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="quiz.css">
+</head>
+<body>
+    <main class="container ranking-container">
+        <header class="header ranking-header">
+            <div>
+                <p class="header-kicker">TOP COMPANIES</p>
+                <h1>資産ランキング</h1>
+                <p class="ranking-subtitle">みんなの最高総資産をチェックしよう。</p>
+            </div>
+            <span class="header-mark" aria-hidden="true">♛</span>
+        </header>
+
+        <nav class="ranking-nav" aria-label="ページナビゲーション">
+            <a href="quiz.html">ゲームに戻る</a>
+            <a href="/">ホームへ</a>
+        </nav>
+
+        <section class="leaderboard-section ranking-section" aria-labelledby="rankingTitle">
+            <div class="leaderboard-heading">
+                <div>
+                    <p class="section-kicker">BEST ASSET VALUE</p>
+                    <h2 id="rankingTitle">みんなのランキング</h2>
+                </div>
+                <button class="ranking-refresh" id="refreshRanking" type="button">更新</button>
+            </div>
+            <p class="ranking-description">各プレイヤーの最高総資産を、資産額にかかわらず全員分表示しています。</p>
+            <div id="rankingList" class="leaderboard-list ranking-list" aria-live="polite" aria-busy="true">
+                <p class="leaderboard-message">ランキングを読み込み中…</p>
+            </div>
+        </section>
+
+        <footer class="portal-footer">良い判断を重ねて、ランキング上位を目指そう。</footer>
+    </main>
+
+    <script>
+        const rankingList = document.getElementById('rankingList');
+
+        async function loadRanking() {
+            rankingList.setAttribute('aria-busy', 'true');
+            rankingList.replaceChildren();
+            const loading = document.createElement('p');
+            loading.className = 'leaderboard-message';
+            loading.textContent = 'ランキングを読み込み中…';
+            rankingList.appendChild(loading);
+
+            try {
+                const response = await fetch('/api/leaderboard', { cache: 'no-store' });
+                if (!response.ok) throw new Error('ランキングを取得できませんでした。時間をおいて再度お試しください。');
+                const data = await response.json();
+                renderRanking(data.entries);
+            } catch (error) {
+                renderMessage(error.message || 'ランキングを読み込めませんでした。');
+            } finally {
+                rankingList.setAttribute('aria-busy', 'false');
+            }
+        }
+
+        function renderRanking(entries) {
+            rankingList.replaceChildren();
+            if (!Array.isArray(entries)) {
+                renderMessage('ランキングのデータを読み込めませんでした。');
+                return;
+            }
+            if (entries.length === 0) {
+                renderMessage('まだ記録がありません。ゲームに挑戦して最初の記録を作ろう！');
+                return;
+            }
+
+            entries.forEach((entry, index) => {
+                const row = document.createElement('div');
+                row.className = `leaderboard-row${index < 3 ? ` podium podium-${index + 1}` : ''}`;
+
+                const place = document.createElement('span');
+                place.className = 'leaderboard-place';
+                place.textContent = `${index + 1}位`;
+
+                const name = document.createElement('span');
+                name.className = 'leaderboard-name';
+                name.textContent = entry.name;
+
+                const assets = document.createElement('span');
+                assets.className = 'leaderboard-assets';
+                assets.textContent = `${new Intl.NumberFormat('ja-JP').format(entry.assets / 10000)}万円`;
+
+                row.append(place, name, assets);
+                rankingList.appendChild(row);
+            });
+        }
+
+        function renderMessage(messageText) {
+            rankingList.replaceChildren();
+            const message = document.createElement('p');
+            message.className = 'leaderboard-message';
+            message.textContent = messageText;
+            rankingList.appendChild(message);
+        }
+
+        document.getElementById('refreshRanking').addEventListener('click', loadRanking);
+        loadRanking();
+    </script>
+</body>
+</html>

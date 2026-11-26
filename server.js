@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 // API Key などの環境変数は .env.local から読み込む
 require('dotenv').config({ path: '.env.local' });
 
@@ -30,13 +31,118 @@ try {
 
 const OPENAI_API_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
+const STARTING_ASSETS = 10000000;
+const CORRECT_ASSET_CHANGE = 1000000;
+const INCORRECT_ASSET_CHANGE = -500000;
 
 // public/ 内の .html 一覧を返す（index.html がこの一覧を使ってリンクを表示する）
 app.get('/api/pages', (req, res) => {
     const files = fs.readdirSync('public')
-        .filter(name => name.endsWith('.html') && name !== 'index.html');
+        .filter(name => name.endsWith('.html') && name !== 'index.html' && name !== 'ranking.html');
     res.json(files);
 });
+
+// 個人を特定しないニックネームと、各プレイヤーの最高総資産を保存する
+app.get('/api/leaderboard', (req, res) => {
+    try {
+        res.set('Cache-Control', 'no-store');
+        const entries = readLeaderboard().map(({ name, assets, correct, total }) => ({
+            name,
+            assets,
+            correct,
+            total
+        }));
+        res.json({ entries });
+    } catch (error) {
+        console.error('Leaderboard read error:', error);
+        res.status(500).json({ error: 'Failed to read leaderboard.' });
+    }
+});
+
+app.post('/api/leaderboard', (req, res) => {
+    const { playerId, name, assets, correct, total } = req.body || {};
+    const normalizedName = typeof name === 'string'
+        ? Array.from(name.trim()).slice(0, 12).join('')
+        : '';
+
+    if (typeof playerId !== 'string' || !/^[0-9a-f-]{36}$/i.test(playerId)) {
+        return res.status(400).json({ error: 'Invalid player ID.' });
+    }
+    if (!normalizedName || /[\u0000-\u001f\u007f]/.test(normalizedName)) {
+        return res.status(400).json({ error: 'A valid nickname is required.' });
+    }
+    if (!Number.isInteger(total) || total < 1 || total > MAX_COUNT ||
+        !Number.isInteger(correct) || correct < 0 || correct > total) {
+        return res.status(400).json({ error: 'Invalid game result.' });
+    }
+
+    const expectedAssets = STARTING_ASSETS +
+        (correct * CORRECT_ASSET_CHANGE) +
+        ((total - correct) * INCORRECT_ASSET_CHANGE);
+    if (assets !== expectedAssets) {
+        return res.status(400).json({ error: 'Invalid asset total.' });
+    }
+
+    try {
+        const entries = readLeaderboard();
+        // ニックネームを変えた場合は別のランキング参加者として記録する
+        const existingIndex = entries.findIndex(entry =>
+            entry.playerId === playerId && entry.name === normalizedName);
+        const existing = existingIndex >= 0 ? entries[existingIndex] : null;
+        const isNewBest = !existing || expectedAssets >= existing.assets;
+        const result = {
+            ...existing,
+            playerId,
+            name: normalizedName,
+            assets: isNewBest ? expectedAssets : existing.assets,
+            correct: isNewBest ? correct : existing.correct,
+            total: isNewBest ? total : existing.total,
+            updatedAt: new Date().toISOString()
+        };
+
+        // 同じニックネームの最高記録を維持し、初回は別枠で追加する
+        if (!existing || isNewBest) {
+            if (existingIndex >= 0) entries[existingIndex] = result;
+            else entries.push(result);
+            writeLeaderboard(entries);
+        }
+
+        const rank = entries
+            .sort((a, b) => b.assets - a.assets || b.correct - a.correct)
+            .findIndex(entry => entry.playerId === playerId && entry.name === normalizedName) + 1;
+        res.json({
+            ok: true,
+            rank,
+            record: { name: result.name, assets: result.assets }
+        });
+    } catch (error) {
+        console.error('Leaderboard write error:', error);
+        res.status(500).json({ error: 'Failed to save leaderboard result.' });
+    }
+});
+
+function readLeaderboard() {
+    try {
+        const savedEntries = JSON.parse(fs.readFileSync(LEADERBOARD_FILE, 'utf8'));
+        if (!Array.isArray(savedEntries)) throw new Error('Invalid leaderboard format.');
+        return savedEntries
+            .filter(entry => entry && typeof entry.playerId === 'string' &&
+                typeof entry.name === 'string' && Number.isInteger(entry.assets))
+            .sort((a, b) => b.assets - a.assets || b.correct - a.correct);
+    } catch (error) {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+    }
+}
+
+function writeLeaderboard(entries) {
+    const sortedEntries = entries
+        .sort((a, b) => b.assets - a.assets || b.correct - a.correct);
+    const temporaryFile = `${LEADERBOARD_FILE}.tmp`;
+    fs.writeFileSync(temporaryFile, JSON.stringify(sortedEntries, null, 2), 'utf8');
+    fs.renameSync(temporaryFile, LEADERBOARD_FILE);
+}
 
 // 問題数の上限（過剰なリクエストでトークンを浪費しないようにする）
 const MAX_COUNT = 20;

@@ -3,39 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>もしも私が経営者だったら</title>
-    <style>
-        body { font-family: sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #333; }
-        h1 { font-size: 1.4rem; }
-        ul { list-style: none; padding: 0; }
-        li { padding: 12px 0; border-bottom: 1px solid #eee; }
-        a { font-size: 1.1rem; text-decoration: none; color: #0366d6; }
-    </style>
+    <meta name="theme-color" content="#173f34">
+    <title>経営ゲーム | もしも私が経営者だったら</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>ゲームを選ぶ</h1>
-    <ul id="appList"></ul>
+    <main class="container portal-container">
+        <header class="header portal-header">
+            <div>
+                <p class="header-kicker">MAKE THE NEXT MOVE</p>
+                <h1>経営の一手を、楽しもう。</h1>
+                <p class="portal-subtitle">判断を重ねて会社を育てる、経営体験ゲーム。</p>
+            </div>
+            <span class="header-mark" aria-hidden="true">¥</span>
+        </header>
+
+        <section class="portal-section" aria-labelledby="gameListTitle">
+            <div class="portal-section-heading">
+                <div>
+                    <p class="portal-kicker">PLAY &amp; GROW</p>
+                    <h2 id="gameListTitle">ゲームを選ぶ</h2>
+                </div>
+                <span class="portal-count" id="gameCount">読み込み中…</span>
+            </div>
+            <ul id="appList" class="portal-game-list" aria-live="polite">
+                <li class="portal-message">ゲームを読み込んでいます…</li>
+            </ul>
+        </section>
+        <p class="portal-ranking-action"><a class="portal-play-link" href="ranking.html">資産ランキングを見る <span aria-hidden="true">→</span></a></p>
+        <footer class="portal-footer">一つひとつの決断が、会社の未来をつくる。</footer>
+    </main>
 
     <script>
-        // サーバーから .html ファイルの一覧を取得してリンクを表示する
         async function loadPages() {
-            const response = await fetch('/api/pages');
-            const files = await response.json();
-
             const list = document.getElementById('appList');
-            if (files.length === 0) {
-                list.innerHTML = '<li>public/ に .html ファイルがありません。</li>';
-                return;
-            }
+            const count = document.getElementById('gameCount');
+            try {
+                const response = await fetch('/api/pages');
+                if (!response.ok) throw new Error('ゲーム一覧を取得できませんでした');
+                const files = await response.json();
+                list.replaceChildren();
+                count.textContent = `${files.length} GAMES`;
+                if (files.length === 0) {
+                    const empty = document.createElement('li');
+                    empty.className = 'portal-message';
+                    empty.textContent = '現在プレイできるゲームはありません。';
+                    list.appendChild(empty);
+                    return;
+                }
 
-            files.forEach(name => {
-                const li = document.createElement('li');
-                const a = document.createElement('a');
-                a.href = name;
-                a.textContent = name === 'quiz.html' ? 'もしも私が経営者だったら' : name;
-                li.appendChild(a);
-                list.appendChild(li);
-            });
+                files.forEach(name => {
+                    const item = document.createElement('li');
+                    item.className = 'portal-game-card';
+                    const icon = document.createElement('span');
+                    icon.className = 'portal-game-icon';
+                    icon.setAttribute('aria-hidden', 'true');
+                    icon.textContent = name === 'quiz.html' ? '▦' : '✦';
+
+                    const detail = document.createElement('div');
+                    detail.className = 'portal-game-detail';
+                    const title = document.createElement('h3');
+                    title.textContent = name === 'quiz.html' ? 'もしも私が経営者だったら' : name;
+                    const description = document.createElement('p');
+                    description.textContent = name === 'quiz.html'
+                        ? '経営判断で資産を築き、みんなのランキングに挑戦。'
+                        : '新しいゲームをプレイしてみましょう。';
+                    detail.append(title, description);
+
+                    const link = document.createElement('a');
+                    link.className = 'portal-play-link';
+                    link.href = name;
+                    link.setAttribute('aria-label', `${title.textContent}をプレイ`);
+                    link.textContent = 'プレイする';
+                    item.append(icon, detail, link);
+                    list.appendChild(item);
+                });
+            } catch (error) {
+                list.replaceChildren();
+                count.textContent = '—';
+                const message = document.createElement('li');
+                message.className = 'portal-message';
+                message.textContent = error.message;
+                list.appendChild(message);
+            }
         }
 
         loadPages();

@@ -10,13 +10,41 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>もしも私が経営者だったら</h1>
+            <div>
+                <p class="header-kicker">THE CEO CHALLENGE</p>
+                <h1>もしも私が経営者だったら</h1>
+            </div>
+            <span class="header-mark" aria-hidden="true">¥</span>
         </div>
 
         <div class="quiz-container">
             <!-- ゲーム設定画面 -->
             <div class="quiz-setup" id="quizSetup">
-                <p class="game-intro">会社のピンチや成長のチャンスに、あなたならどう決断する？選択を通して経営の考え方を学ぼう。</p>
+                <p class="game-intro">会社のピンチや成長のチャンスに、あなたならどう決断する？判断を重ねて会社の資産を増やし、経営者ランキングに挑戦しよう。</p>
+                <section class="company-panel setup-company-panel" aria-labelledby="setupCompanyTitle">
+                    <div class="company-panel-heading">
+                        <div>
+                            <p class="section-kicker">YOUR COMPANY</p>
+                            <h2 id="setupCompanyTitle">あなたの会社</h2>
+                        </div>
+                        <span class="company-icon" aria-hidden="true">▦</span>
+                    </div>
+                    <div class="company-metrics">
+                        <div class="company-metric asset-metric">
+                            <span>スタート時の総資産</span>
+                            <strong>1,000<span>万円</span></strong>
+                        </div>
+                        <div class="company-metric">
+                            <span>最善の判断</span>
+                            <strong class="gain-value">＋100<span>万円</span></strong>
+                        </div>
+                        <div class="company-metric">
+                            <span>別の判断を選ぶ</span>
+                            <strong class="loss-value">−50<span>万円</span></strong>
+                        </div>
+                    </div>
+                    <p class="company-rule">全シナリオ終了時の総資産でランキングします。</p>
+                </section>
                 <div class="form-group">
                     <label for="quizTitle">ゲームのタイトル:</label>
                     <input type="text" id="quizTitle" placeholder="例: もしも私が経営者だったら" value="もしも私が経営者だったら">
@@ -27,17 +55,41 @@
                         <label for="questionCount">シナリオ数:</label>
                         <input type="number" id="questionCount" min="1" max="20" value="5">
                     </div>
-
                     <div class="form-group">
-                        <button class="btn" id="generateBtn" type="button" onclick="generateQuiz()">ゲームを始める</button>
+                        <label for="playerName">ランキング用ニックネーム:</label>
+                        <input type="text" id="playerName" maxlength="12" placeholder="匿名社長" autocomplete="nickname">
                     </div>
                 </div>
+                <p class="privacy-note">ニックネームはランキングに表示されます。本名以外を使ってください。</p>
+                <div class="form-row setup-actions">
+                    <div class="form-group">
+                        <button class="btn" id="generateBtn" type="button" onclick="generateQuiz()">ゲームを始める <span aria-hidden="true">→</span></button>
+                    </div>
+                </div>
+                <section class="leaderboard-section setup-leaderboard" aria-labelledby="setupLeaderboardTitle">
+                    <div class="leaderboard-heading">
+                        <div>
+                            <p class="section-kicker">TOP COMPANIES</p>
+                            <h2 id="setupLeaderboardTitle">資産ランキング TOP 3</h2>
+                        </div>
+                        <span class="leaderboard-period">みんなの最高記録</span>
+                    </div>
+                    <div id="setupLeaderboard" class="leaderboard-list" aria-live="polite">
+                        <p class="leaderboard-message">ランキングを読み込み中…</p>
+                    </div>
+                    <a class="leaderboard-link" href="ranking.html">ランキングを見る <span aria-hidden="true">→</span></a>
+                </section>
             </div>
 
             <!-- ゲーム実行画面 -->
             <div class="quiz-playing" id="quizPlaying">
                 <div class="quiz-progress" id="quizProgress"></div>
                 <h2 id="quizTitleDisplay"></h2>
+                <section class="company-strip" aria-label="会社の現在の総資産">
+                    <span>会社の総資産</span>
+                    <strong id="currentAssets">1,000万円</strong>
+                    <span class="asset-change" id="assetChange" aria-live="polite">判断で資産が変動します</span>
+                </section>
 
                 <div class="question" id="currentQuestion"></div>
 
@@ -59,6 +111,26 @@
                     <p class="award-message" id="awardMessage"></p>
                 </section>
                 <div class="score" id="finalScore"></div>
+                <section class="final-assets" aria-labelledby="finalAssetsTitle">
+                    <p class="section-kicker">COMPANY VALUE</p>
+                    <h3 id="finalAssetsTitle">あなたが築いた総資産</h3>
+                    <strong id="finalAssets">1,000万円</strong>
+                    <p id="assetOutcome"></p>
+                </section>
+                <section class="leaderboard-section result-leaderboard" aria-labelledby="resultLeaderboardTitle">
+                    <div class="leaderboard-heading">
+                        <div>
+                            <p class="section-kicker">TOP COMPANIES</p>
+                            <h3 id="resultLeaderboardTitle">資産ランキング TOP 3</h3>
+                        </div>
+                        <span class="leaderboard-period">みんなの最高記録</span>
+                    </div>
+                    <p id="personalRank" class="personal-rank" aria-live="polite">あなたの順位を集計中…</p>
+                    <div id="resultLeaderboard" class="leaderboard-list" aria-live="polite">
+                        <p class="leaderboard-message">記録を登録しています…</p>
+                    </div>
+                    <a class="leaderboard-link" href="ranking.html">ランキングを見る <span aria-hidden="true">→</span></a>
+                </section>
                 <section class="review-section" aria-labelledby="reviewTitle">
                     <h3 id="reviewTitle">経営判断を振り返る</h3>
                     <p class="review-intro">選んだ判断と最善の判断を比べて、経営のポイントを確認しましょう。</p>
@@ -79,8 +151,21 @@
         let selectedAnswer = null;
         let hasAnswered = false;
         let answerHistory = [];
+        const STARTING_ASSETS = 10000000;
+        const CORRECT_ASSET_CHANGE = 1000000;
+        const INCORRECT_ASSET_CHANGE = -500000;
+        let totalAssets = STARTING_ASSETS;
+        let resultSubmitted = false;
+        const PLAYER_ID_KEY = 'ceo-challenge-player-id';
+        const PLAYER_NAME_KEY = 'ceo-challenge-player-name';
 
-        document.addEventListener('DOMContentLoaded', () => updateStatus());
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatus();
+            document.getElementById('playerName').value = getSavedPlayerName();
+            getLeaderboard().then(entries => {
+                renderLeaderboard('setupLeaderboard', entries, 3);
+            }).catch(() => renderLeaderboard('setupLeaderboard', null));
+        });
 
         function updateStatus(message = '準備完了', isError = false) {
             const statusEl = document.getElementById('status');
@@ -92,11 +177,14 @@
         async function generateQuiz() {
             const title = document.getElementById('quizTitle').value.trim();
             const count = Number(document.getElementById('questionCount').value);
+            const playerName = document.getElementById('playerName').value.trim() || '匿名社長';
 
             if (!title || !Number.isInteger(count) || count < 1 || count > 20) {
                 alert('タイトルとシナリオ数（1〜20）を正しく入力してください');
                 return;
             }
+            document.getElementById('playerName').value = playerName;
+            savePlayerName(playerName);
 
             const generateBtn = document.getElementById('generateBtn');
             document.getElementById('loading').classList.add('show');
@@ -134,7 +222,10 @@
                 currentQuestionIndex = 0;
                 score = 0;
                 answerHistory = [];
+                totalAssets = STARTING_ASSETS;
+                resultSubmitted = false;
                 document.getElementById('quizTitleDisplay').textContent = data.title || title;
+                updateAssetDisplay();
                 startQuiz();
                 updateStatus('あなたの経営判断を始めましょう');
             } catch (error) {
@@ -198,7 +289,10 @@
             const isCorrect = selectedAnswer === correctAnswer;
 
             if (isCorrect) score++;
+            const assetChange = isCorrect ? CORRECT_ASSET_CHANGE : INCORRECT_ASSET_CHANGE;
+            totalAssets = Math.max(0, totalAssets + assetChange);
             answerHistory[currentQuestionIndex] = { selectedAnswer, isCorrect };
+            updateAssetDisplay(assetChange);
 
             const selectionItems = document.querySelectorAll('.selection-item');
             selectionItems.forEach((item, i) => {
@@ -214,10 +308,11 @@
             feedback.style.display = 'block';
             feedback.className = `answer-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
             const explanation = question.explanation || 'この判断が、状況に合った経営の一手です。';
+            const assetMessage = `総資産 ${formatAssets(totalAssets)}（${formatSignedAssets(assetChange)}）`;
             if (isCorrect) {
-                feedback.textContent = `正解！ ${explanation}`;
+                feedback.textContent = `正解！ ${assetMessage}。${explanation}`;
             } else {
-                feedback.textContent = `不正解。最善の判断は「${question.selections[correctAnswer]}」です。${explanation}`;
+                feedback.textContent = `不正解。${assetMessage}。最善の判断は「${question.selections[correctAnswer]}」です。${explanation}`;
             }
 
             if (currentQuestionIndex < quizData.length - 1) {
@@ -232,16 +327,173 @@
             showQuestion();
         }
 
-        function showResults() {
+        async function showResults() {
             document.getElementById('quizPlaying').style.display = 'none';
             document.getElementById('quizResults').style.display = 'block';
 
             const percentage = Math.round((score / quizData.length) * 100);
             document.getElementById('finalScore').textContent =
                 `${score} / ${quizData.length} 問正解 (${percentage}%)`;
+            document.getElementById('finalAssets').textContent = formatAssets(totalAssets);
+            const assetDelta = totalAssets - STARTING_ASSETS;
+            document.getElementById('assetOutcome').textContent = assetDelta >= 0
+                ? `スタート時から ${formatSignedAssets(assetDelta)} の成長です。`
+                : `スタート時から ${formatSignedAssets(assetDelta)} となりました。次の経営で巻き返そう。`;
             renderExecutiveAward(percentage);
             renderReview();
             updateStatus('プレイ完了');
+            if (!resultSubmitted) {
+                resultSubmitted = true;
+                const resultList = document.getElementById('resultLeaderboard');
+                resultList.innerHTML = '<p class="leaderboard-message">ランキングに記録しています…</p>';
+                document.getElementById('personalRank').textContent = 'あなたの順位を集計中…';
+                let submission;
+                try {
+                    submission = await submitResult();
+                } catch (error) {
+                    document.getElementById('personalRank').textContent = 'あなたの順位を取得できませんでした。';
+                    renderLeaderboard('resultLeaderboard', null);
+                    console.error('Leaderboard error:', error);
+                    return;
+                }
+
+                const rank = submission.rank;
+                document.getElementById('personalRank').textContent = Number.isInteger(rank)
+                    ? `あなたの順位（最高記録）：${rank}位`
+                    : 'あなたの順位を確認できませんでした。';
+                try {
+                    const entries = await getLeaderboard();
+                    renderLeaderboard('resultLeaderboard', entries, 3,
+                        rank > 3 ? { ...submission.record, rank, personal: true } : null);
+                    renderLeaderboard('setupLeaderboard', entries, 3);
+                } catch (error) {
+                    renderLeaderboard('resultLeaderboard', null);
+                    console.error('Leaderboard read error:', error);
+                }
+            }
+        }
+
+        function updateAssetDisplay(change) {
+            document.getElementById('currentAssets').textContent = formatAssets(totalAssets);
+            const changeEl = document.getElementById('assetChange');
+            if (typeof change !== 'number') {
+                changeEl.textContent = '判断で資産が変動します';
+                changeEl.className = 'asset-change';
+                return;
+            }
+            changeEl.textContent = `${formatSignedAssets(change)} ${change > 0 ? '増加' : '減少'}`;
+            changeEl.className = `asset-change ${change > 0 ? 'positive' : 'negative'}`;
+        }
+
+        function formatAssets(value) {
+            return `${new Intl.NumberFormat('ja-JP').format(value / 10000)}万円`;
+        }
+
+        function formatSignedAssets(value) {
+            const sign = value >= 0 ? '+' : '−';
+            return `${sign}${new Intl.NumberFormat('ja-JP').format(Math.abs(value) / 10000)}万円`;
+        }
+
+        function getSavedPlayerName() {
+            try {
+                return localStorage.getItem(PLAYER_NAME_KEY) || '';
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function savePlayerName(name) {
+            try {
+                localStorage.setItem(PLAYER_NAME_KEY, name);
+            } catch (error) {
+                // Continue without browser storage.
+            }
+        }
+
+        function getPlayerId() {
+            try {
+                let playerId = localStorage.getItem(PLAYER_ID_KEY);
+                if (!playerId) {
+                    playerId = typeof crypto !== 'undefined' && crypto.randomUUID
+                        ? crypto.randomUUID()
+                        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+                            const random = Math.random() * 16 | 0;
+                            return (character === 'x' ? random : (random & 0x3 | 0x8)).toString(16);
+                        });
+                    localStorage.setItem(PLAYER_ID_KEY, playerId);
+                }
+                return playerId;
+            } catch (error) {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+                    const random = Math.random() * 16 | 0;
+                    return (character === 'x' ? random : (random & 0x3 | 0x8)).toString(16);
+                });
+            }
+        }
+
+        async function getLeaderboard() {
+            const response = await fetch('/api/leaderboard', { cache: 'no-store' });
+            if (!response.ok) throw new Error('ランキングを取得できませんでした');
+            const data = await response.json();
+            return data.entries;
+        }
+
+        async function submitResult() {
+            const response = await fetch('/api/leaderboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    playerId: getPlayerId(),
+                    name: document.getElementById('playerName').value.trim() || '匿名社長',
+                    assets: totalAssets,
+                    correct: score,
+                    total: quizData.length
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'ランキングに記録できませんでした');
+            return data;
+        }
+
+        function renderLeaderboard(elementId, entries, limit = entries?.length, personalEntry = null) {
+            const container = document.getElementById(elementId);
+            container.replaceChildren();
+            if (!Array.isArray(entries)) {
+                const message = document.createElement('p');
+                message.className = 'leaderboard-message';
+                message.textContent = 'ランキングを読み込めませんでした。';
+                container.appendChild(message);
+                return;
+            }
+            if (entries.length === 0) {
+                const message = document.createElement('p');
+                message.className = 'leaderboard-message';
+                message.textContent = 'まだ記録がありません。最初のランキングに載ろう！';
+                container.appendChild(message);
+                return;
+            }
+            entries.slice(0, limit).forEach((entry, index) => {
+                appendLeaderboardRow(container, entry, index + 1);
+            });
+            if (personalEntry && personalEntry.rank > limit) {
+                appendLeaderboardRow(container, personalEntry, personalEntry.rank);
+            }
+        }
+
+        function appendLeaderboardRow(container, entry, rank) {
+            const row = document.createElement('div');
+            row.className = `leaderboard-row${rank <= 3 ? ` podium podium-${rank}` : ''}${entry.personal ? ' personal-row' : ''}`;
+            const place = document.createElement('span');
+            place.className = 'leaderboard-place';
+            place.textContent = String(rank).padStart(2, '0');
+            const name = document.createElement('span');
+            name.className = 'leaderboard-name';
+            name.textContent = entry.name;
+            const scoreText = document.createElement('span');
+            scoreText.className = 'leaderboard-assets';
+            scoreText.textContent = formatAssets(entry.assets);
+            row.append(place, name, scoreText);
+            container.appendChild(row);
         }
 
         function renderExecutiveAward(percentage) {
@@ -344,6 +596,9 @@
             currentQuestionIndex = 0;
             score = 0;
             answerHistory = [];
+            totalAssets = STARTING_ASSETS;
+            resultSubmitted = false;
+            updateAssetDisplay();
             updateStatus();
         }
     </script>

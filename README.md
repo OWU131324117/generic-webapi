@@ -119,8 +119,11 @@ Format: JSON array
 **Files:**
 - `prompt.md` - Defines business decision scenarios and explanations
 - `public/quiz.html` - Game, scoring, and missed-question review interface
+- `server.js` - Saves and serves the shared asset leaderboard
 
-**Usage:** Generate four-choice management scenarios and learn from each decision. The API response retains the `question`, `selections`, and `answer` fields; `concept` and `explanation` provide learning points and review feedback.
+**Usage:** Generate four-choice management scenarios and learn from each decision. The company starts with ¥10 million in assets; each best decision adds ¥1 million and each other decision subtracts ¥500,000. Players can enter a nickname and compare their highest asset total on the leaderboard. Each nickname is ranked separately, so changing a nickname creates a separate ranking entry. The game shows the top three and the current nickname's rank, while `public/ranking.html` shows all recorded entries. The API response retains the `question`, `selections`, and `answer` fields; `concept` and `explanation` provide learning points and review feedback.
+
+The leaderboard is shared by users of the same server and is saved in the root `leaderboard.json` file. Keep that file on persistent storage if the server is redeployed. Nicknames are visible to other players; the game does not ask for real names.
 
 ### 2. Translation App (Example)
 
